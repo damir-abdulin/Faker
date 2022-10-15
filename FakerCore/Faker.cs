@@ -21,7 +21,7 @@ namespace FakerCore
             return (T) Create(typeof(T));
         }
 
-        private object Create(Type t)
+        public object Create(Type t)
         {
             var newObject = _generators.Where(g => g.CanGenerate(t)).
                 Select(g => g.Generate(t, _context)).FirstOrDefault();
