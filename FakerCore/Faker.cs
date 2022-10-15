@@ -40,10 +40,7 @@ namespace FakerCore
         
         private static object GetDefaultValue(Type t)
         {
-            if (t.IsValueType)
-                return Activator.CreateInstance(t);
-  
-            return null;
+            return t.IsValueType ? Activator.CreateInstance(t) : null;
         }
     }
 }
