@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace FakerCore.Generators.ValueGenerators;
+﻿namespace FakerCore.Generators;
 
 public class CharGenerator : IGenerator
 {
