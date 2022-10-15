@@ -4,7 +4,7 @@ public class DoubleGenerator : IGenerator
 {
     public object Generate(Type type, GeneratorContext context)
     {
-        return (double)(context.Random.NextDouble() * context.Random.Next(int.MinValue, int.MaxValue));
+        return (context.Random.NextDouble() - 0.5) * double.MaxValue;
     }
 
     public bool CanGenerate(Type type)

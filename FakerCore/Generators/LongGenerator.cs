@@ -4,7 +4,7 @@ public class LongGenerator : IGenerator
 {
     public object Generate(Type type, GeneratorContext context)
     {
-        return (long)context.Random.Next(int.MinValue, int.MaxValue);
+        return context.Random.NextInt64(long.MinValue, long.MaxValue);
     }
 
     public bool CanGenerate(Type type)
