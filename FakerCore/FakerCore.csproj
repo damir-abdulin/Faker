@@ -39,6 +39,9 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Faker.cs" />
+        <Compile Include="Generators\GeneratorContext.cs" />
+        <Compile Include="Generators\IGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\BoolGenerator.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
