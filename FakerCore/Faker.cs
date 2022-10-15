@@ -25,13 +25,10 @@ namespace FakerCore
 
         private object Create(Type t)
         {
-            foreach (var generator in _generators)
-            {
-                if (generator.CanGenerate(t))
-                    return generator.Generate(t, _context);
-            }
+            var newObject = _generators.Where(g => g.CanGenerate(t)).
+                Select(g => g.Generate(t, _context)).FirstOrDefault();
 
-            return null;
+            return newObject ?? GetDefaultValue(t);
         }
 
         private void GetGenerators()
@@ -39,6 +36,14 @@ namespace FakerCore
             _generators = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(t => t.GetInterfaces().Contains(typeof(IGenerator)))
                 .Select(t => (IGenerator)Activator.CreateInstance(t));
+        }
+        
+        private static object GetDefaultValue(Type t)
+        {
+            if (t.IsValueType)
+                return Activator.CreateInstance(t);
+  
+            return null;
         }
     }
 }

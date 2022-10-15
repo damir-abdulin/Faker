@@ -21,7 +21,9 @@ namespace Examples
                     falseCount += 1;
             }
 
-            Console.Write($"TRUE:  {trueCount}\nFALSE: {falseCount}");
+            //Console.Write($"TRUE:  {trueCount}\nFALSE: {falseCount}");
+            Console.Write($"INT: {faker.Create<int>()}\nLONG: {faker.Create<long>()}");
+
             
         }
     }
