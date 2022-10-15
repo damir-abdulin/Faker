@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using FakerCore.Generators;
@@ -8,7 +9,7 @@ namespace FakerCore
 {
     public class Faker
     {
-        private List<IGenerator> _generators;
+        private IEnumerable<IGenerator> _generators;
         private GeneratorContext _context;
 
         public Faker()
@@ -33,29 +34,11 @@ namespace FakerCore
             return null;
         }
 
-        public void GetGenerators()
+        private void GetGenerators()
         {
-            _generators = new List<IGenerator>();
-            
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            var filter = new TypeFilter(InterfaceFilter);
-
-            foreach (var type in types)
-            {
-                var myInterfaces = type.FindInterfaces(filter, "FakerCore.Generators.IGenerator");
-                
-                if (myInterfaces.Length > 0)
-                {
-                    var generator = (IGenerator)Activator.CreateInstance(type);
-                    _generators.Add(generator);
-                }
-            }
-            
-        }
-        
-        private bool InterfaceFilter(Type typeObj, Object criteriaObj)
-        {
-            return typeObj.ToString() == criteriaObj.ToString();
+            _generators = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => t.GetInterfaces().Contains(typeof(IGenerator)))
+                .Select(t => (IGenerator)Activator.CreateInstance(t));
         }
     }
 }
