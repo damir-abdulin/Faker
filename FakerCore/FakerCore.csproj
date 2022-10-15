@@ -11,6 +11,8 @@
         <AssemblyName>FakerCore</AssemblyName>
         <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -42,7 +44,17 @@
         <Compile Include="Generators\GeneratorContext.cs" />
         <Compile Include="Generators\IGenerator.cs" />
         <Compile Include="Generators\ValueGenerators\BoolGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\ByteGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\CharGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\DoubleGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\FloatGenerator.cs" />
         <Compile Include="Generators\ValueGenerators\IntGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\LongGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\SByteGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\ShortGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\UIntGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\ULongGenerator.cs" />
+        <Compile Include="Generators\ValueGenerators\UShortGenerator.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
