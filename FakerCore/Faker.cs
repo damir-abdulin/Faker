@@ -23,13 +23,7 @@ namespace FakerCore
             var newObject = _generators.Where(g => g.CanGenerate(t)).
                 Select(g => g.Generate(t, _context)).FirstOrDefault();
 
-            if (newObject is null)
-            {
-                // Generate object.
-                newObject = FillClass(t);
-            }
-            
-            return newObject ?? GetDefaultValue(t);
+            return newObject ?? GetDefaultValue(t) ?? FillClass(t);
         }
 
         private void GetGenerators()
@@ -53,12 +47,29 @@ namespace FakerCore
             return newObject;
         }
 
-        private object CreateClass(Type t)
+        private ConstructorInfo GetConstructorForInvoke(Type t)
         {
-            var constructorsInfo = t.GetConstructors(BindingFlags.DeclaredOnly | 
-                                                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            
-            var paramsInfo = constructorsInfo[0].GetParameters();
+            var constructorsInfo = t.GetConstructors(BindingFlags.DeclaredOnly |
+                                                     BindingFlags.Instance | BindingFlags.Public |
+                                                     BindingFlags.NonPublic);
+
+            var maxParamsCount = constructorsInfo[0].GetParameters().Length;
+            var constructorWithMaxParams = 0;
+            for (var i = 1; i < constructorsInfo.Length; i++)
+            {
+                var currParamsCount = constructorsInfo[i].GetParameters().Length;
+                if (currParamsCount > maxParamsCount)
+                {
+                    constructorWithMaxParams = i;
+                    maxParamsCount = currParamsCount;
+                }
+            }   
+
+            return constructorsInfo[constructorWithMaxParams];
+        }
+
+        private object[] GetArguments(ParameterInfo[] paramsInfo)
+        {
             var args = new object[paramsInfo.Length];
 
             for (var i = 0; i < args.Length; i++)
@@ -66,7 +77,17 @@ namespace FakerCore
                 args[i] = Create(paramsInfo[i].ParameterType);
             }
 
-            return constructorsInfo[0].Invoke(args);
+            return args;
+        }
+        
+        private object CreateClass(Type t)
+        {
+            var constructor = GetConstructorForInvoke(t);
+            
+            var paramsInfo = constructor.GetParameters();
+            var args = GetArguments(paramsInfo);
+            
+            return constructor.Invoke(args);
         }
 
         private void FillProperties(object obj, IReflect t)
