@@ -104,11 +104,11 @@ namespace FakerCore
             var propertiesInfo = t.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (var property in propertiesInfo)
             {
-                if (property.CanWrite)
+                if (property.SetMethod is not null && property.SetMethod.IsPublic)
                 {
                     var getMethod = property.GetMethod?.Invoke(obj, null);
                     var defValue = GetDefaultValue(property.PropertyType);
-                    if (getMethod is not null && getMethod.Equals(defValue))
+                    if (getMethod is null || getMethod.Equals(defValue))
                         property.SetValue(obj, Create(property.PropertyType));
                 }
             }
@@ -122,7 +122,7 @@ namespace FakerCore
             {   
                 var getMethod = field.GetValue(obj);
                 
-                if (getMethod == GetDefaultValue(field.FieldType))
+                if (getMethod is null || getMethod.Equals(GetDefaultValue(field.FieldType)))
                     field.SetValue(obj, Create(field.FieldType));
             }
         }
