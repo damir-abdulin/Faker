@@ -1,9 +1,11 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 
 namespace FakerCore
 {
     public class Faker
     {
+        private List<Type> _generatedTypes = new List<Type>();
         private IEnumerable<IGenerator> _generators;
         private GeneratorContext _context;
 
@@ -23,8 +25,12 @@ namespace FakerCore
             var newObject = _generators.Where(g => g.CanGenerate(t)).
                 Select(g => g.Generate(t, _context)).FirstOrDefault();
 
-            if (newObject is null && IsDto(t))
+            if (newObject is null && IsDto(t) && !IsGenerated(t))
+            {
+                _generatedTypes.Add(t);
                 newObject = FillClass(t);
+                _generatedTypes.Remove(t);
+            }
 
             return newObject ?? GetDefaultValue(t);
         }
@@ -131,6 +137,11 @@ namespace FakerCore
             }
 
             return methodsCount - propertiesCount == 0;
+        }
+
+        private bool IsGenerated(Type t)
+        {
+            return _generatedTypes.Exists(genT => genT == t);
         }
     }
 }
