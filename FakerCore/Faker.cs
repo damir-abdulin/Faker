@@ -108,7 +108,7 @@ namespace FakerCore
                 {
                     var getMethod = property.GetMethod?.Invoke(obj, null);
                     var defValue = GetDefaultValue(property.PropertyType);
-                    if (getMethod.Equals(defValue))
+                    if (getMethod is not null && getMethod.Equals(defValue))
                         property.SetValue(obj, Create(property.PropertyType));
                 }
             }
