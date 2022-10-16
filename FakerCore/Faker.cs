@@ -23,6 +23,8 @@ namespace FakerCore
             var newObject = _generators.Where(g => g.CanGenerate(t)).
                 Select(g => g.Generate(t, _context)).FirstOrDefault();
 
+            var isDto = IsDto(t);
+            
             return newObject ?? GetDefaultValue(t) ?? FillClass(t);
         }
 
@@ -95,7 +97,8 @@ namespace FakerCore
             var propertiesInfo = t.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (var property in propertiesInfo)
             {
-                property.SetValue(obj, Create(property.PropertyType)); 
+                if (property.SetMethod is not null && property.SetMethod.IsPublic)
+                    property.SetValue(obj, Create(property.PropertyType)); 
             }
         }
 
@@ -107,6 +110,26 @@ namespace FakerCore
             {
                 field.SetValue(obj, Create(field.FieldType));
             }
+        }
+
+        private bool IsDto(IReflect t)
+        {
+            var methods = t.GetMethods(BindingFlags.DeclaredOnly |
+                                       BindingFlags.Instance | BindingFlags.Public);
+            var methodsCount = methods.Length;
+
+            var properties = t.GetProperties(BindingFlags.DeclaredOnly |
+                                             BindingFlags.Instance | BindingFlags.Public);
+            var propertiesCount = 0;
+            foreach (var property in properties)
+            {
+                if (property.GetMethod is not null && property.GetMethod.IsPublic)
+                    propertiesCount += 1;
+                if (property.SetMethod is not null && property.SetMethod.IsPublic)
+                    propertiesCount += 1;
+            }
+
+            return methodsCount - propertiesCount == 0;
         }
     }
 }
