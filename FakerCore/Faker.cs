@@ -23,9 +23,10 @@ namespace FakerCore
             var newObject = _generators.Where(g => g.CanGenerate(t)).
                 Select(g => g.Generate(t, _context)).FirstOrDefault();
 
-            var isDto = IsDto(t);
-            
-            return newObject ?? GetDefaultValue(t) ?? FillClass(t);
+            if (newObject is null && IsDto(t))
+                newObject = FillClass(t);
+
+            return newObject ?? GetDefaultValue(t);
         }
 
         private void GetGenerators()
