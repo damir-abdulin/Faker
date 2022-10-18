@@ -5,11 +5,18 @@ namespace FakerCore
 {
     public class Faker
     {
+        private FakerConfig _fakerConfig;
+        
         private List<Type> _generatedTypes = new List<Type>();
         private IEnumerable<IGenerator> _generators;
         private GeneratorContext _context;
 
-        public Faker()
+        public Faker(FakerConfig fakerConfig)
+        {
+            _fakerConfig = fakerConfig;
+        }
+        
+        public Faker() : this(new FakerConfig())
         {
             GetGenerators();
             _context = new GeneratorContext(this, new Random());
