@@ -1,31 +1,30 @@
-﻿using System.Diagnostics;
+﻿using System.Globalization;
 using System.Reflection;
 
 namespace FakerCore
 {
     public class Faker
     {
-
         private const string DllName = "Generators";
         private readonly string[] _generatorsFromDllNames =  { "Generators.CharGenerator", "Generators.ShortGenerator"};
         
-        private FakerConfig _fakerConfig;
+        private readonly FakerConfig _fakerConfig;
+        private readonly List<Type> _generatedTypes;
+        private readonly GeneratorContext _context;
         
-        private List<Type> _generatedTypes = new List<Type>();
         private IEnumerable<IGenerator> _generators;
-        private IEnumerable<IGenerator> _dynamicGenerators;
-        private GeneratorContext _context;
 
         public Faker(FakerConfig fakerConfig)
         {
             _fakerConfig = fakerConfig;
+            GetGenerators();
+            _context = new GeneratorContext(this, new Random());
+
+            _generatedTypes = new List<Type>();
         }
         
         public Faker() : this(new FakerConfig())
-        {
-            GetGenerators();
-            _context = new GeneratorContext(this, new Random());
-        }
+        { }
         
         public T Create<T>()
         {
@@ -69,11 +68,7 @@ namespace FakerCore
         {
             object result = null;
             var assembly = Assembly.LoadFrom(DllName);
-            Console.WriteLine(DllName);
 
-            Type[] types = assembly.GetTypes();
-            
-            
             foreach (var generatorName in _generatorsFromDllNames)
             {
                 var genType = assembly.GetType(generatorName);
@@ -100,7 +95,9 @@ namespace FakerCore
         {
             var newObject = CreateClass(t);
             FillProperties(newObject, t);
+            FillPropertiesWithUserGenerators(newObject, t);
             FillFields(newObject, t);
+            FillFieldsWithUserGenerators(newObject, t);
 
             return newObject;
         }
@@ -126,24 +123,46 @@ namespace FakerCore
             return constructorsInfo[constructorWithMaxParams];
         }
 
-        private object[] GetArguments(ParameterInfo[] paramsInfo)
+        private object[] GetArguments(Type t, ParameterInfo[] paramsInfo)
         {
             var args = new object[paramsInfo.Length];
 
+            var textInfo = new CultureInfo("en-US",false).TextInfo;
             for (var i = 0; i < args.Length; i++)
             {
+
+                if (paramsInfo[i].Name is not null)
+                {
+                    var fieldName = textInfo.ToTitleCase(paramsInfo[i].Name);
+                    if (_fakerConfig.HasGenerator(t, fieldName))
+                    {
+                        var fieldInfo = t.GetField(fieldName, 
+                            BindingFlags.Public | BindingFlags.Instance);
+                        var propertyInfo = t.GetProperty(fieldName, 
+                            BindingFlags.Public | BindingFlags.Instance);
+
+                        if (fieldInfo is not null && fieldInfo.FieldType == paramsInfo[i].ParameterType ||
+                            propertyInfo is not null && propertyInfo.PropertyType == paramsInfo[i].ParameterType)
+                        {
+                            var generator = _fakerConfig.GetGenerator(t, fieldName);
+                            args[i] = generator.Generate(paramsInfo[i].ParameterType, _context);
+                            continue;
+                        }
+                    }
+                }
+                
                 args[i] = Create(paramsInfo[i].ParameterType);
             }
 
             return args;
         }
-        
+
         private object CreateClass(Type t)
         {
             var constructor = GetConstructorForInvoke(t);
             
             var paramsInfo = constructor.GetParameters();
-            var args = GetArguments(paramsInfo);
+            var args = GetArguments(t, paramsInfo);
             
             return constructor.Invoke(args);
         }
@@ -162,7 +181,7 @@ namespace FakerCore
                 }
             }
         }
-
+        
         private void FillFields(object obj, IReflect t)
         {
             var fieldsInfo = t.GetFields(BindingFlags.Public | BindingFlags.Instance);
@@ -170,9 +189,39 @@ namespace FakerCore
             foreach (var field in fieldsInfo)
             {   
                 var getMethod = field.GetValue(obj);
-                
+
                 if (getMethod is null || getMethod.Equals(GetDefaultValue(field.FieldType)))
                     field.SetValue(obj, Create(field.FieldType));
+            }
+        }
+
+        private void FillPropertiesWithUserGenerators(object obj, Type t)
+        {
+            var propertiesInfo = t.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var property in propertiesInfo)
+            {
+                var propertyType = property.PropertyType;
+                if (_fakerConfig.HasGenerator(t, property.Name) && property.CanWrite)
+                {
+                    var generator = _fakerConfig.GetGenerator(t, property.Name);
+
+                    if (generator.CanGenerate(propertyType))
+                        property.SetValue(obj, generator.Generate(propertyType, _context));
+                }
+            }
+        }
+        
+        private void FillFieldsWithUserGenerators(object obj, Type t)
+        {
+            var fieldsInfo = t.GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var field in fieldsInfo)
+            {
+                if (_fakerConfig.HasGenerator(t, field.Name))
+                {
+                    var generator = _fakerConfig.GetGenerator(t, field.Name);
+                    field.SetValue(obj, generator.Generate(field.FieldType, _context));
+                }
             }
         }
 

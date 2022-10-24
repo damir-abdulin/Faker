@@ -14,9 +14,18 @@ public class A
     public short ShortValue;
     public string StringValue;
 
+    public string City { get; }
+    public int Age;
+
     private A()
     {
         Ctor = "A()";
+    }
+
+    public A(string city)
+    {
+        Ctor = "A(string)";
+        City = city;
     }
 }
 
