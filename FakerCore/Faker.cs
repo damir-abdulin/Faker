@@ -5,7 +5,9 @@ namespace FakerCore
 {
     public class Faker
     {
-        private readonly string[] _dllNames =  new string[] { "CharGenerator", "ShortGenerator"};
+
+        private const string DllName = "Generators";
+        private readonly string[] _generatorsFromDllNames =  { "Generators.CharGenerator", "Generators.ShortGenerator"};
         
         private FakerConfig _fakerConfig;
         
@@ -33,7 +35,7 @@ namespace FakerCore
         public object Create(Type t)
         {
             object newObject;
-
+            
             try
             {
                 newObject = GenerateViaDll(t);
@@ -66,16 +68,23 @@ namespace FakerCore
         private object GenerateViaDll(Type t)
         {
             object result = null;
-            
-            foreach (var generatorName in _dllNames)
-            {
-                var assembly = Assembly.Load(generatorName);
-                var gen = (IGenerator)assembly.CreateInstance(generatorName);
+            var assembly = Assembly.LoadFrom(DllName);
+            Console.WriteLine(DllName);
 
-                if (gen != null && gen.CanGenerate(t))
+            Type[] types = assembly.GetTypes();
+            
+            
+            foreach (var generatorName in _generatorsFromDllNames)
+            {
+                var genType = assembly.GetType(generatorName);
+
+                var methodInfoCanGenerate = genType?.GetMethod("CanGenerate",  BindingFlags.NonPublic | BindingFlags.Static);
+
+                var param = new object[] { t };
+                if (methodInfoCanGenerate is not null && (bool?)methodInfoCanGenerate.Invoke(null, param) == true)
                 {
-                    result = gen.Generate(t, _context);
-                    break;
+                    var methodInfoGenerate = genType.GetMethod("Generate",  BindingFlags.NonPublic | BindingFlags.Static);
+                    result = methodInfoGenerate?.Invoke(null, param);
                 }
             }
 
