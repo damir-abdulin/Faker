@@ -5,10 +5,13 @@ namespace FakerCore
 {
     public class Faker
     {
+        private readonly string[] _dllNames =  new string[] { "CharGenerator", "ShortGenerator"};
+        
         private FakerConfig _fakerConfig;
         
         private List<Type> _generatedTypes = new List<Type>();
         private IEnumerable<IGenerator> _generators;
+        private IEnumerable<IGenerator> _dynamicGenerators;
         private GeneratorContext _context;
 
         public Faker(FakerConfig fakerConfig)
@@ -29,8 +32,19 @@ namespace FakerCore
 
         public object Create(Type t)
         {
-            var newObject = _generators.Where(g => g.CanGenerate(t)).
-                Select(g => g.Generate(t, _context)).FirstOrDefault();
+            object newObject;
+
+            try
+            {
+                newObject = GenerateViaDll(t);
+            }
+            catch (Exception)
+            {
+                newObject = null;
+            }
+            
+            newObject ??= _generators.Where(g => g.CanGenerate(t)).
+                    Select(g => g.Generate(t, _context)).FirstOrDefault();
 
             if (newObject is null && IsDto(t) && !IsGenerated(t))
             {
@@ -47,6 +61,25 @@ namespace FakerCore
             _generators = Assembly.GetExecutingAssembly().GetTypes()
                 .Where(t => t.GetInterfaces().Contains(typeof(IGenerator)))
                 .Select(t => (IGenerator)Activator.CreateInstance(t));
+        }
+
+        private object GenerateViaDll(Type t)
+        {
+            object result = null;
+            
+            foreach (var generatorName in _dllNames)
+            {
+                var assembly = Assembly.Load(generatorName);
+                var gen = (IGenerator)assembly.CreateInstance(generatorName);
+
+                if (gen != null && gen.CanGenerate(t))
+                {
+                    result = gen.Generate(t, _context);
+                    break;
+                }
+            }
+
+            return result;
         }
         
         private object GetDefaultValue(Type t)
